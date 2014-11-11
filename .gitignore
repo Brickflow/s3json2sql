@@ -1,0 +1,5 @@
+dev.js
+node_modules
+.idea
+out
+atlassian-ide-plugin.xml
