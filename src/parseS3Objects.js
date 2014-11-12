@@ -17,15 +17,12 @@ module.exports = function parseS3Objects(s3, s3conf, task, callback) {
       }).on('end', function(buffer) {
         async.eachSeries(_.compact(buffer.toString('utf8').split('\n')), task, cb);
       });
-    }, function(err, res) {
-//      callback(err, res);
-      console.log('arguments of callback', arguments);
-    });
+    }, callback);
   }).on('progress', function() {
     console.log('progress');
   }).on('end', function() {
     console.log('end');
   }).on('error', function(err) {
-    cb(err);
+    callback(err);
   });
 };
