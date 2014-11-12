@@ -4,6 +4,8 @@ module.exports = function getType(value, key) {
     return {sql: 'VARCHAR(255) NOT NULL UNIQUE', suffix: 'hash'};
   }
   switch (typeof value) {
+    case 'boolean':
+      return {sql: 'BOOLEAN', suffix: 'b'};
     case 'number':
       return {sql: 'DOUBLE', suffix: 'd'};
     case 'string':
