@@ -1,16 +1,19 @@
 'use strict';
 var _ = require('lodash');
-var s3lib = require('s3');
-var orm2 = require('orm');
 
+var s3lib = require('s3');
 var parseS3Objects = require('./parseS3Objects');
 
-function run(conf, s3, db) {
-  parseS3Objects(s3, conf.s3, function(row, done) {
-    var json = JSON.parse(row);
-    console.log('DAT JSON');
-    console.dir(json);
-    process.nextTick(done);
+var sqlDriver = require('./drivers/mysql');
+
+_.mixin('flattenObject')
+
+function run(conf, s3, sql) {
+  parseS3Objects(s3, conf.s3, function eachLogEntryTask(str, done) {
+    var json = JSON.parse(str);
+    var payload = _(json).omit('text', 'meta').assign(json.meta).value();
+    var tableName = str.text;
+    sql.insert(json.text, payload, done);
   });
 }
 
@@ -28,14 +31,12 @@ module.exports = function s3json2sql(conf) {
         secretAccessKey: '[s3 secret here]'
       }
     },
-    sql: {uri: 'mysql://...'},
-    tmpDir: __dirname + '/tmp'
-  });
-  var s3 = s3lib.createClient(_.omit(conf.s3, 'bucket', 'prefix', 'filePath'));
-  var sql = orm2.connect(conf.sql.uri, function(err, db) {
-    if (err) {
-      throw err;
+    sql: {
+      uri: 'mysql://...'
     }
-    run(conf, s3, db);
   });
+
+  var s3 = s3lib.createClient(_.omit(conf.s3, 'bucket', 'prefix', 'filePath'));
+  var sql = sqlDriver(conf.sql.uri);
+  run(conf, s3, sql);
 };
