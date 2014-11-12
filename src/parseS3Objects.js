@@ -1,28 +1,28 @@
 'use strict';
 var _ = require('lodash'),
     async = require('async');
+var getS3Objects = require('./getS3Objects');
 
-module.exports = function parseS3Objects(s3, s3conf, task, callback) {
-  s3.listObjects({s3Params: {
-    Bucket: s3conf.bucket,
-    Prefix: s3conf.prefix
-  }}).on('data', function(res) {
-    async.eachSeries(_(res.Contents).filter(function(f) {
-      return !!f.Key.match(s3conf.filePath);
-    }).pluck('Key').value(), function(key, cb) {
-      s3.downloadBuffer({Bucket: s3conf.bucket, Key: key
-      }).on('error', function() {
-        console.log('downloader error', arguments);
-      }).on('progress', function() {
-      }).on('end', function(buffer) {
-        async.eachSeries(_.compact(buffer.toString('utf8').split('\n')), task, cb);
-      });
-    }, callback);
-  }).on('progress', function() {
-    console.log('progress');
-  }).on('end', function() {
-    console.log('end');
-  }).on('error', function(err) {
-    callback(err);
-  });
+module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
+  getS3Objects(s3, s3conf, function fileTask(file, cb) {
+    var q = 'SELECT COUNT(`key`) AS cnt FROM s3json2sql WHERE `key`="' + file.Key + '"';
+    sql.sql.query(q, function(err, res) {
+      if (err) {
+        console.log('NEMDERULTKI', err.code, err);
+        return cb(err);
+      } else if (res[0].cnt === 0) {
+        s3.downloadBuffer({
+          Bucket: s3conf.bucket,
+          Key: file.Key
+        }).on('error', function() {
+          console.log('downloadBuffer ERRORKA', arguments)
+        }).on('end', function(buffer) {
+          return async.eachSeries(_.compact(buffer.toString('utf8').split('\n')), rowTask, cb);
+        });
+      } else {
+        console.log('HAS THIS FILE PROCESSED');
+        return cb();
+      }
+    });
+  }, callback);
 };

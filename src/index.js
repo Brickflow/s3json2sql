@@ -6,14 +6,18 @@ var parseS3Objects = require('./parseS3Objects');
 
 var sqlDriver = require('./drivers/mysql');
 
-_.mixin('flattenObject')
-
 function run(conf, s3, sql) {
-  parseS3Objects(s3, conf.s3, function eachLogEntryTask(str, done) {
+  parseS3Objects(s3, conf.s3, sql, function eachLogEntryTask(str, done) {
     var json = JSON.parse(str);
     var payload = _(json).omit('text', 'meta').assign(json.meta).value();
-    var tableName = str.text;
-    sql.insert(json.text, payload, done);
+    if (json.text) {
+      sql.insert(json.text, payload, done);
+    } else {
+      console.log('UNTITLED FOSKAZAL');
+      done();
+    }
+  }, function finalResult(err, res) {
+    console.log('DAT FINAL RESULT', err, res);
   });
 }
 

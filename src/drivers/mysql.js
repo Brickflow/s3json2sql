@@ -31,7 +31,7 @@ module.exports = function mysqlDriver(uri) {
   function addColumns(table, fields, cb) {
     query([
       'ALTER TABLE', wrap(table, '`'),
-      'ADD COLUMN', touple(_.assign(fields, hashField()))
+      'ADD COLUMN', touple(fields)
     ], cb);
   }
 
@@ -55,47 +55,48 @@ module.exports = function mysqlDriver(uri) {
       'INSERT INTO', wrap(table, '`'),
       insertTouple(data, sql.escape.bind(sql))
     ];
-    query(q , function(err, fields, columns) {
+    query(q, function(err, fields, columns) {
       if (err) {
         switch(err.code) {
           case 'ER_NO_SUCH_TABLE':
             createTable(table, _.mapValues(data, toSqlType), function(err, res) {
               query(q, cb);
-           });
+            });
             break;
           case 'ER_BAD_FIELD_ERROR':
             getColumns(table, function(err, fields) {
               var missingFieldNames = _.difference(_.keys(data), _.keys(fields));
               var fieldsToCreate =
-                  _(data).pick(missingFieldNames).
-                      mapValues(safeName).
-                      mapValues(toSqlType).
-                      value();
+                  _(data).pick(missingFieldNames).mapValues(toSqlType).value();
               addColumns(table, fieldsToCreate, function(err, res) {
-                query(q, cb);
+                if (err && err.code) {
+                  cb(err);
+                } else {
+                  query(q, cb);
+                }
               });
             });
             break;
           case 'ER_DUP_ENTRY':
-            console.log('ER_DUP_ENTRY WARNKA');
+            return cb();
+          case 'ER_TOO_LONG_IDENT':
+            console.log('ER_TOO_LONG_IDENT VAN');
             return cb();
           default:
             console.log('SOME KINDA ERRORKA', err.code);
             return cb(err);
         }
+      } else {
+        return cb.apply(null, Array.prototype.slice.call(arguments));
       }
-
-      cb.apply(null, Array.prototype.slice.call(arguments));
     });
   }
-
-
 
   return {
     insert: insert,
     getColumns: getColumns,
     createTable: createTable,
-    addColumns: addColumns
-    // sql: sql
+    addColumns: addColumns,
+    sql: sql
   };
 };
