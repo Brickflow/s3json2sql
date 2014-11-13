@@ -24,7 +24,7 @@ module.exports = function mysqlDriver(uri) {
   var sql = mysql.createConnection(uri);
 
   function query(parts, payload, cb) {
-    console.log(parts);
+    console.log(_.isArray(parts) ? parts.join(' ') + ';' : parts);
     sql.query(_.isArray(parts) ? parts.join(' ') + ';' : parts, payload, cb);
   }
 
@@ -45,7 +45,28 @@ module.exports = function mysqlDriver(uri) {
 
   function createTable(table, fields, cb) {
     table = safeName(table);
-    query(['CREATE TABLE', wrap(table, '`'), touple(_.assign(fields, hashField()), '`')], cb);
+    query(['CREATE TABLE', wrap(table, '`'),
+      touple(_.assign(fields, hashField()), '`')], cb);
+  }
+
+  function find(table, data, cb) {
+    var q = [
+      'SELECT * FROM', table, 'WHERE',
+      _.times(_.pairs(data).length,
+          _.partial(_.identity, '?? = ?')).join(' AND ')];
+    query(q, _(data).pairs().flatten().value(), function(err, res) {
+      if (err) {
+        switch (err.code) {
+          case 'ER_NO_SUCH_TABLE':
+            createTable(table,_.mapValues(data, toSqlType), function(err) {
+              if (err) { return cb(err); }
+              return find(table, data, cb);
+            });
+        }
+      }
+      return cb(null, res);
+    });
+
   }
 
   function insert(table, data, cb) {
@@ -65,9 +86,10 @@ module.exports = function mysqlDriver(uri) {
             break;
           case 'ER_BAD_FIELD_ERROR':
             getColumns(table, function(err, fields) {
-              var missingFieldNames = _.difference(_.keys(data), _.keys(fields));
               var fieldsToCreate =
-                  _(data).pick(missingFieldNames).mapValues(toSqlType).value();
+                  _(data).
+                      pick(_.difference( _.keys(data), _.keys(fields)) ).
+                      mapValues(toSqlType).value();
               addColumns(table, fieldsToCreate, function(err, res) {
                 if (err && err.code) {
                   cb(err);
@@ -82,6 +104,9 @@ module.exports = function mysqlDriver(uri) {
           case 'ER_TOO_LONG_IDENT':
             console.log('ER_TOO_LONG_IDENT VAN');
             return cb();
+          case 'ER_WRONG_TABLE_NAME':
+            console.log('ER_WRONG_TABLE_NAME VAN');
+            return cb(); // this was a bur in our logger, the script should ignore it
           default:
             console.log('SOME KINDA ERRORKA', err.code);
             return cb(err);
@@ -94,6 +119,7 @@ module.exports = function mysqlDriver(uri) {
 
   return {
     insert: insert,
+    find: find,
     getColumns: getColumns,
     createTable: createTable,
     addColumns: addColumns,

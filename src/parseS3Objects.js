@@ -5,22 +5,30 @@ var getS3Objects = require('./getS3Objects');
 
 module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
   getS3Objects(s3, s3conf, function fileTask(file, cb) {
-    var q = 'SELECT COUNT(`key`) AS cnt FROM s3json2sql WHERE `key`="' + file.Key + '"';
-    sql.sql.query(q, function(err, res) {
+    sql.find('s3json2sql', _.pick(file,
+        'Key', 'LastModified'), function(err, res) {
       if (err) {
         console.log('NEMDERULTKI', err.code, err);
         return cb(err);
-      } else if (res[0].cnt === 0) {
+      } else if (res.length === 0) {
         s3.downloadBuffer({
           Bucket: s3conf.bucket,
           Key: file.Key
         }).on('error', function() {
-          console.log('downloadBuffer ERRORKA', arguments)
+          console.log('s3json2sql: s3.downloadBuffer error', arguments)
         }).on('end', function(buffer) {
-          return async.eachSeries(_.compact(buffer.toString('utf8').split('\n')), rowTask, cb);
+          return async.eachSeries(
+              _.compact(buffer.toString('utf8').split('\n')),
+              rowTask,
+              function(err, res) {
+                if (err) {
+                  return cb(err);
+                }
+                sql.insert('s3json2sql', _.pick(file, 'Key', 'LastModified'), cb);
+              });
         });
       } else {
-        console.log('HAS THIS FILE PROCESSED');
+        console.log('s3json2sql: This file has already been processed.');
         return cb();
       }
     });

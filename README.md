@@ -10,7 +10,8 @@ entries (where each row is a JSON object to parse).
       s3: {
         s3Options: {
           accessKeyId: '...',
-          secretAccessKey: '...'
+          secretAccessKey: '...',
+          ...
         },
         bucket: 'brickflow-logs'
       },
