@@ -25,7 +25,7 @@ module.exports = function s3json2sql(conf) {
   if (conf && typeof conf.sql === 'string') {
     conf.sql = {uri: conf.sql};
   }
-  conf = _.defaults(conf || {
+  conf = _.defaults(conf || {}, {
     loopDelay: 5 * 1000 * 60,
     s3: {
       s3Options: {
