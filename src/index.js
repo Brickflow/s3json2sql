@@ -6,7 +6,7 @@ var parseS3Objects = require('./parseS3Objects');
 
 var sqlDriver = require('./drivers/mysql');
 
-function run(conf, s3, sql) {
+function run(conf, s3, sql, callback) {
   parseS3Objects(s3, conf.s3, sql, function eachLogEntryTask(row, done) {
     var json = JSON.parse(row);
     var payload = _(json).
@@ -18,9 +18,7 @@ function run(conf, s3, sql) {
       console.log('UNTITLED FOSKAZAL', conf.s3.tableField, json);
       process.nextTick(done);
     }
-  }, function finalResult(err, res) {
-    console.log('DAT FINAL RESULT', err, res);
-  });
+  }, callback);
 }
 
 module.exports = function s3json2sql(conf) {
@@ -28,6 +26,7 @@ module.exports = function s3json2sql(conf) {
     conf.sql = {uri: conf.sql};
   }
   conf = _.defaults(conf || {
+    loopDelay: 5000,
     s3: {
       s3Options: {
         accessKeyId: '[s3 key here]',
@@ -48,5 +47,13 @@ module.exports = function s3json2sql(conf) {
 
   var s3 = s3lib.createClient(_.omit(conf.s3, 'bucket', 'prefix', 'filePath'));
   var sql = sqlDriver(conf.sql.uri);
-  run(conf, s3, sql);
+
+  function recurse() {
+    run(conf, s3, sql, function() {
+      setTimeout(recurse, conf.loopDelay);
+    });
+  }
+
+  recurse();
+
 };
