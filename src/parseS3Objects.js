@@ -24,9 +24,7 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
                   return cb(err);
                 }
                 sql.insert('s3json2sql',
-                    _.pick(file, 'Key', 'LastModified'),function(err,res) {
-                      console.log(err,res);
-                    });
+                    _.pick(file, 'Key', 'LastModified'), cb);
               });
         });
       } else {

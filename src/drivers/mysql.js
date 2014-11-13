@@ -70,7 +70,6 @@ module.exports = function mysqlDriver(uri) {
           return cb(err);
         }
       }
-      console.log('SUCCESSFULLY MEGFUTOTT');
       return cb(null, res);
     });
 
