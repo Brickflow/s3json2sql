@@ -9,7 +9,7 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
         ['Key', 'LastModified']), function(err, res) {
       if (err) {
         return cb(err);
-      } else if (res === undefined) {
+      } else if (res && res.length === 0) {
         s3.downloadBuffer({
           Bucket: s3conf.bucket,
           Key: file.Key
