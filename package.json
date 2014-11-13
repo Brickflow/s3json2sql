@@ -1,6 +1,6 @@
 {
   "name": "s3json2sql",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pull JSON log files from an S3 directory and populate (and extend) an SQL database",
   "main": "src/index.js",
   "scripts": {
@@ -19,8 +19,5 @@
     "lodash": "^2.4.1",
     "mysql": "^2.5.3",
     "s3": "^4.3.1"
-  },
-  "devDependencies": {
-    "traceur": "0.0.74"
   }
 }

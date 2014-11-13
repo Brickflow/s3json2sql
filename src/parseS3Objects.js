@@ -10,7 +10,7 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
       if (err) {
         console.log('NEMDERULTKI', err.code, err);
         return cb(err);
-      } else if (res.length === 0) {
+      } else if (res && res.length === 0) {
         s3.downloadBuffer({
           Bucket: s3conf.bucket,
           Key: file.Key
