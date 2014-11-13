@@ -29,7 +29,7 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
         });
       } else {
         console.log('s3json2sql: This file has already been processed.');
-        return cb();
+        return process.nextTick(function() { cb() });
       }
     });
   }, callback);
