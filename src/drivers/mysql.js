@@ -11,6 +11,12 @@ var touple = require('../util/touple'),
     typedData = require('../util/typedData'),
     safeName = require('../util/safeName');
 
+var SUPRESSED_ERRORS = [
+  'ER_DUP_ENTRY',
+  'ER_TOO_LONG_IDENT',
+  'ER_WRONG_TABLE_NAME'
+];
+
 function hashField(data) {
   return { s3json2mysqlHash: data ?
       crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex') :
@@ -24,7 +30,6 @@ module.exports = function mysqlDriver(uri) {
   var sql = mysql.createConnection(uri);
 
   function query(parts, payload, cb) {
-    console.log(_.isArray(parts) ? parts.join(' ') + ';' : parts);
     sql.query(_.isArray(parts) ? parts.join(' ') + ';' : parts, payload, cb);
   }
 
@@ -56,14 +61,16 @@ module.exports = function mysqlDriver(uri) {
           _.partial(_.identity, '?? = ?')).join(' AND ')];
     query(q, _(data).pairs().flatten().value(), function(err, res) {
       if (err) {
-        switch (err.code) {
-          case 'ER_NO_SUCH_TABLE':
-            createTable(table,_.mapValues(data, toSqlType), function(err) {
-              if (err) { return cb(err); }
-              return find(table, data, cb);
-            });
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+          createTable(table,_.mapValues(data, toSqlType), function(err) {
+            if (err) { return cb(err); }
+            return find(table, data, cb);
+          });
+        } else {
+          return cb(err);
         }
       }
+      console.log('SUCCESSFULLY MEGFUTOTT');
       return cb(null, res);
     });
 
@@ -78,39 +85,28 @@ module.exports = function mysqlDriver(uri) {
     ];
     query(q, function(err, fields, columns) {
       if (err) {
-        switch(err.code) {
-          case 'ER_NO_SUCH_TABLE':
-            createTable(table, _.mapValues(data, toSqlType), function(err, res) {
-              query(q, cb);
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+          createTable(table, _.mapValues(data, toSqlType), function(err, res) {
+            query(q, cb);
+          });
+        } if (err.code === 'ER_BAD_FIELD_ERROR') {
+          getColumns(table, function(err, fields) {
+            var fieldsToCreate =
+                _(data).
+                    pick(_.difference( _.keys(data), _.keys(fields)) ).
+                    mapValues(toSqlType).value();
+            addColumns(table, fieldsToCreate, function(err, res) {
+              if (err && err.code) {
+                cb(err);
+              } else {
+                query(q, cb);
+              }
             });
-            break;
-          case 'ER_BAD_FIELD_ERROR':
-            getColumns(table, function(err, fields) {
-              var fieldsToCreate =
-                  _(data).
-                      pick(_.difference( _.keys(data), _.keys(fields)) ).
-                      mapValues(toSqlType).value();
-              addColumns(table, fieldsToCreate, function(err, res) {
-                if (err && err.code) {
-                  cb(err);
-                } else {
-                  query(q, cb);
-                }
-              });
-            });
-            break;
-          case 'ER_DUP_ENTRY':
-            return setImmediate(cb);
-          case 'ER_TOO_LONG_IDENT':
-            console.log('ER_TOO_LONG_IDENT VAN');
-            return setImmediate(cb);
-          case 'ER_WRONG_TABLE_NAME':
-            console.log('ER_WRONG_TABLE_NAME VAN');
-            return setImmediate(cb);
-            // this was a bur in our logger, the script should ignore it
-          default:
-            console.log('SOME KINDA ERRORKA', err.code);
-            return cb(err);
+          });
+        } else if (_.contains(SUPRESSED_ERRORS, err.code)) {
+          setImmediate(cb);
+        } else {
+          cb(err);
         }
       } else {
         return cb.apply(null, Array.prototype.slice.call(arguments));
