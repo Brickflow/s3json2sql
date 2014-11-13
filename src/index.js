@@ -26,7 +26,7 @@ module.exports = function s3json2sql(conf) {
     conf.sql = {uri: conf.sql};
   }
   conf = _.defaults(conf || {
-    loopDelay: 5000,
+    loopDelay: 5 * 1000 * 60,
     s3: {
       s3Options: {
         accessKeyId: '[s3 key here]',
