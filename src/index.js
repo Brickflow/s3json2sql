@@ -7,7 +7,6 @@ var parseS3Objects = require('./parseS3Objects');
 var sqlDriver = require('./drivers/mysql');
 
 function run(conf, s3, sql) {
-  console.dir(conf);
   parseS3Objects(s3, conf.s3, sql, function eachLogEntryTask(row, done) {
     var json = JSON.parse(row);
     var payload = _(json).

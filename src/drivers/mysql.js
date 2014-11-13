@@ -100,13 +100,13 @@ module.exports = function mysqlDriver(uri) {
             });
             break;
           case 'ER_DUP_ENTRY':
-            return cb();
+            return process.nextTick(function() { cb() });
           case 'ER_TOO_LONG_IDENT':
             console.log('ER_TOO_LONG_IDENT VAN');
-            return cb();
+            return process.nextTick(function() { cb() });
           case 'ER_WRONG_TABLE_NAME':
             console.log('ER_WRONG_TABLE_NAME VAN');
-            return cb(); // this was a bur in our logger, the script should ignore it
+            return process.nextTick(function() { cb() }); // this was a bur in our logger, the script should ignore it
           default:
             console.log('SOME KINDA ERRORKA', err.code);
             return cb(err);
