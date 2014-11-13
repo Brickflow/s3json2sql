@@ -15,7 +15,6 @@ function run(conf, s3, sql, callback) {
     if (json[conf.s3.tableField]) {
       sql.insert(json[conf.s3.tableField], payload, done);
     } else {
-      console.log('UNTITLED FOSKAZAL', conf.s3.tableField, json);
       process.nextTick(done);
     }
   }, callback);

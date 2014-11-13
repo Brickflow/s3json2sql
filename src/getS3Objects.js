@@ -10,9 +10,8 @@ module.exports = function getS3Objects(s3, s3conf, fileTask, cb) {
   }}).on('data', function(res) {
     files = files.concat(res.Contents);
   }).on('end', function() {
-    console.log('s3json2sql: Fetched listObjects:', files.length, 'chunks');
     async.eachSeries(_.sortBy(files, 'Key'), fileTask, cb);
   }).on('error', function() {
-    console.log('listObjects ERRORKA', arguments);
+    console.log('listObjects ERROR', arguments);
   });
 };
