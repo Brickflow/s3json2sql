@@ -56,9 +56,9 @@ module.exports = function mysqlDriver(uri) {
 
   function find(table, data, cb) {
     var q = [
-      'SELECT * FROM', table, 'WHERE',
+      'SELECT * FROM', wrap(table, '`'), 'WHERE',
       _.times(_.pairs(data).length,
-          _.partial(_.identity, '?? = ?')).join(' AND ')];
+          _.partial(_.identity, '?? = ?')).join(' AND ') ];
     query(q, _(data).pairs().flatten().value(), function(err, res) {
       if (err) {
         if (err.code === 'ER_NO_SUCH_TABLE') {
