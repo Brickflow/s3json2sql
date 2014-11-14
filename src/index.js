@@ -11,7 +11,7 @@ function run(conf, s3, sql, callback) {
     var json = JSON.parse(row);
     var payload = _(json).
         omit(conf.s3.tableField, conf.s3.payloadField).
-        assign(json[conf.s3.payloadField]).value();
+        assign( _.omit(json[conf.s3.payloadField], '_doc')).value();
     if (json[conf.s3.tableField]) {
       sql.insert(json[conf.s3.tableField], payload, done);
     } else {

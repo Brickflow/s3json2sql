@@ -51,7 +51,12 @@ module.exports = function mysqlDriver(uri) {
   function createTable(table, fields, cb) {
     table = safeName(table);
     query(['CREATE TABLE', wrap(table, '`'),
-      touple(_.assign(fields, hashField()), '`')], cb);
+      touple(_.assign(fields, hashField()), '`')], function(err, res) {
+      if (err) {
+        console.log('s3json2sql ERROR: CREATE TABLE', table, 'FAILED: ', err);
+      }
+      cb(err,res);
+    });
   }
 
   function find(table, data, cb) {
