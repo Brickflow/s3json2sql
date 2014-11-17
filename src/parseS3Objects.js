@@ -13,7 +13,7 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
       if (err) {
         logger.error('s3json2sql.status', {
           message: 'Error while checking if file has already been processed',
-          err: err,
+          err: err.toString(),
           stack: err.stack
         });
         return cb(err);
@@ -34,7 +34,7 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
                 if (err) {
                   logger.error('s3json2sql.status', {
                     file: file.Key,
-                    err: err,
+                    err: err.toString(),
                     stack: err.stack
                   });
                   return cb(err);
@@ -51,7 +51,8 @@ module.exports = function parseS3Objects(s3, s3conf, sql, rowTask, callback) {
           file: file.Key,
           message: 'File has already been processed'
         });
-        return setImmediate(cb);
+//        return setImmediate(cb);
+        return process.nextTick(cb);
       }
     });
   }, callback);

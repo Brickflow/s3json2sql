@@ -106,7 +106,7 @@ module.exports = function mysqlDriver(uri) {
           createTable(table, _.mapValues(data, toSqlType), function(err, res) {
             query(q, cb);
           });
-        } if (err.code === 'ER_BAD_FIELD_ERROR') {
+        } else if (err.code === 'ER_BAD_FIELD_ERROR') {
           getColumns(table, function(err, fields) {
             var fieldsToCreate =
                 _(data).
@@ -123,7 +123,7 @@ module.exports = function mysqlDriver(uri) {
         } else if (_.contains(SUPRESSED_ERRORS, err.code)) {
           logger.warn('s3json2sql.query', {
             message: 'Supressed error',
-            err: err,
+            err: err.toString(),
             stack: err.stack,
             code: err.code
           });
@@ -132,7 +132,7 @@ module.exports = function mysqlDriver(uri) {
           logger.error('s3json2sql.query', {
             message: 'Query error',
             query: q,
-            err: err,
+            err: err.toString(),
             stack: err ? err.stack : null
           });
           cb(err);
