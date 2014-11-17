@@ -14,7 +14,7 @@ module.exports = function getType(value, key) {
       if (value instanceof Date) {
         return {sql: 'DATETIME', suffix: 'dt'};
       } else if (value instanceof Error) {
-        return { sql: 'TEXT', suffix, 'txt'};
+        return { sql: 'TEXT', suffix: 'txt'};
       }
       throw new Error('Invalid kind of object here' + value);
     default:
