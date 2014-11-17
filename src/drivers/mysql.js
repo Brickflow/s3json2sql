@@ -9,7 +9,8 @@ var touple = require('../util/touple'),
     wrap = require('../util/wrap'),
     getType = require('../util/getType'),
     typedData = require('../util/typedData'),
-    safeName = require('../util/safeName');
+    safeName = require('../util/safeName'),
+    loggerFactory = require('../util/logger');
 
 var SUPRESSED_ERRORS = [
   'ER_DUP_ENTRY',
@@ -28,6 +29,7 @@ function toSqlType(val) { return getType(val).sql; }
 
 module.exports = function mysqlDriver(uri) {
   var sql = mysql.createConnection(uri);
+  var logger = loggerFactory({ insert: insert });
 
   function query(parts, payload, cb) {
     sql.query(_.isArray(parts) ? parts.join(' ') + ';' : parts, payload, cb);
@@ -53,9 +55,19 @@ module.exports = function mysqlDriver(uri) {
     query(['CREATE TABLE', wrap(table, '`'),
       touple(_.assign(fields, hashField()), '`')], function(err, res) {
       if (err) {
-        console.log('s3json2sql ERROR: CREATE TABLE', table, 'FAILED: ', err);
+        logger.error('s3json2sql.createTable', {
+          message: 'Failed to create table',
+          table: table,
+          err: err,
+          stack: err.stack
+        });
+      } else {
+        logger.info('s3json2sql.status', {
+          message: 'Created table',
+          table: table
+        });
       }
-      cb(err,res);
+      cb(err, res);
     });
   }
 
@@ -83,6 +95,7 @@ module.exports = function mysqlDriver(uri) {
   function insert(table, data, cb) {
     table = safeName(table);
     data = _.assign(typedData(flat(data)), hashField(data));
+    cb = cb || _.noop;
     var q = [
       'INSERT INTO', wrap(table, '`'),
       insertTouple(data, sql.escape.bind(sql))
@@ -108,8 +121,20 @@ module.exports = function mysqlDriver(uri) {
             });
           });
         } else if (_.contains(SUPRESSED_ERRORS, err.code)) {
+          logger.warn('s3json2sql.query', {
+            message: 'Supressed error',
+            err: err,
+            stack: err.stack,
+            code: err.code
+          });
           setImmediate(cb);
         } else {
+          logger.error('s3json2sql.query', {
+            message: 'Query error',
+            query: q,
+            err: err,
+            stack: err ? err.stack : null
+          });
           cb(err);
         }
       } else {

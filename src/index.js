@@ -51,7 +51,7 @@ module.exports = function s3json2sql(conf) {
 
   function recurse() {
     run(conf, s3, sql, function() {
-      setTimeout(recurse, conf.loopDelay);
+//      setTimeout(recurse, conf.loopDelay);
     });
   }
 
