@@ -8,6 +8,7 @@ module.exports = function sqlLogger(sql) {
   if (!instances[sql]) {
     instances[sql] = _(LOG_LEVELS).zipObject().mapValues(function(x, level) {
       return function(text, meta) {
+        console.log(level, text, '==>', meta);
         sql.insert('s3json2sql_error', {
           level: level,
           text: text,
