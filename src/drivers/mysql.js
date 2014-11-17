@@ -127,7 +127,7 @@ module.exports = function mysqlDriver(uri) {
             stack: err.stack,
             code: err.code
           });
-          setImmediate(cb);
+          process.nextTick(cb);
         } else {
           logger.error('s3json2sql.query', {
             message: 'Query error',
